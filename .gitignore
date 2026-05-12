@@ -1,0 +1,10 @@
+# Apps Script secrets
+.clasp.json
+creds.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
