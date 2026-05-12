@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YoDigo — Participante</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/participant.css">
+</head>
+<body>
+
+  <header class="participant-header">
+    <div class="logo-small">Yo<span>Digo</span></div>
+    <span id="participant-name-header"></span>
+  </header>
+
+  <main class="participant-main">
+
+    <!-- SALA DE ESPERA -->
+    <div id="view-waiting" class="view">
+      <div class="waiting-screen">
+        <div class="pulse-circle"></div>
+        <h2>Esperando que inicie la sesión...</h2>
+        <p id="waiting-name"></p>
+      </div>
+    </div>
+
+    <!-- PREGUNTA ACTIVA -->
+    <div id="view-question" class="view hidden">
+      <div id="question-container"></div>
+    </div>
+
+    <!-- RESPUESTA ENVIADA -->
+    <div id="view-answered" class="view hidden">
+      <div class="answered-screen">
+        <div class="check-circle">✓</div>
+        <h2>¡Respuesta enviada!</h2>
+        <p>Espera la siguiente pregunta...</p>
+      </div>
+    </div>
+
+    <!-- SESIÓN TERMINADA -->
+    <div id="view-ended" class="view hidden">
+      <div class="ended-screen">
+        <h1>🎉</h1>
+        <h2>¡Sesión finalizada!</h2>
+        <p>Gracias por participar</p>
+        <button class="btn-primary" onclick="window.location.href='index.html'">
+          Volver al inicio
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/questions/multiple.js"></script>
+  <script src="js/questions/open.js"></script>
+  <script src="js/questions/blanks.js"></script>
+  <script src="js/questions/wordcloud.js"></script>
+  <script src="js/questions/drawing.js"></script>
+  <script>
+    // ── ESTADO ───────────────────────────────────────────────
+    const sessionId   = sessionStorage.getItem('session_id');
+    const sessionPin  = sessionStorage.getItem('session_pin');
+    const participant = sessionStorage.getItem('participant_name');
+
+    let currentSlide     = null;
+    let pollingInterval  = null;
+    let lastSlideId      = null;
+    let answered         = false;
+
+    // ── INICIO ───────────────────────────────────────────────
+    window.addEventListener('load', () => {
+      if (!sessionId || !participant) {
+        window.location.href = 'index.html';
+        return;
+      }
+      document.getElementById('participant-name-header').textContent = participant;
+      document.getElementById('waiting-name').textContent = `Hola, ${participant} 👋`;
+      startPolling();
+    });
+
+    // ── POLLING ──────────────────────────────────────────────
+    function startPolling() {
+      pollingInterval = setInterval(checkSession, 2500);
+    }
+
+    async function checkSession() {
+      const result = await Sessions.getById(sessionId);
+      if (!result.success) return;
+
+      const session = result.data;
+
+      if (session.status === 'ended') {
+        clearInterval(pollingInterval);
+        showView('view-ended');
+        return;
+      }
+
+      if (session.status === 'active') {
+        await checkCurrentSlide(session);
+      }
+    }
+
+    async function checkCurrentSlide(session) {
+      const slidesResult = await Slides.getAll(session.presentation_id);
+      if (!slidesResult.success || !slidesResult.data.length) return;
+
+      // El presentador controla el slide activo por orden
+      // Usamos el campo current_slide de la sesión (lo agregaremos)
+      const activeSlide = slidesResult.data[0]; // por ahora el primero
+
+      if (activeSlide.id !== lastSlideId) {
+        lastSlideId = activeSlide.id;
+        currentSlide = activeSlide;
+        answered = false;
+        showQuestion(activeSlide);
+      }
+    }
+
+    // ── MOSTRAR PREGUNTA ─────────────────────────────────────
+    function showQuestion(slide) {
+      const container = document.getElementById('question-container');
+
+      switch (slide.type) {
+        case 'multiple':
+          container.innerHTML = renderMultiple(slide);
+          break;
+        case 'open':
+          container.innerHTML = renderOpen(slide);
+          break;
+        case 'blanks':
+          container.innerHTML = renderBlanks(slide);
+          break;
+        case 'wordcloud':
+          container.innerHTML = renderWordcloud(slide);
+          break;
+        case 'drawing':
+          container.innerHTML = renderDrawing(slide);
+          initDrawing();
+          break;
+      }
+
+      showView('view-question');
+    }
+
+    // ── ENVIAR RESPUESTA ─────────────────────────────────────
+    async function submitAnswer(answer) {
+      if (answered) return;
+      answered = true;
+
+      const result = await Responses.save({
+        session_id:  sessionId,
+        slide_id:    currentSlide.id,
+        participant: participant,
+        answer:      answer
+      });
+
+      if (result.success) {
+        showView('view-answered');
+      } else {
+        answered = false;
+        alert(result.message || 'Error al enviar');
+      }
+    }
+
+    // ── NAVEGACIÓN ───────────────────────────────────────────
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+  </script>
+
+</body>
+</html>

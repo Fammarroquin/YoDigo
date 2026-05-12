@@ -1,0 +1,173 @@
+/* ── HEADER ───────────────────────────────────────────────── */
+.participant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+}
+
+.participant-header span { color: #aaa; font-size: 0.9rem; }
+
+/* ── MAIN ─────────────────────────────────────────────────── */
+.participant-main {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* ── ESPERA ───────────────────────────────────────────────── */
+.waiting-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 60px 0;
+  text-align: center;
+}
+
+.pulse-circle {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: #e94560;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%   { transform: scale(1);    opacity: 1; }
+  50%  { transform: scale(1.15); opacity: 0.7; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* ── PREGUNTA ─────────────────────────────────────────────── */
+.question-card {
+  background: #16213e;
+  border-radius: 16px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.question-text {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.question-hint { color: #aaa; font-size: 0.9rem; }
+
+/* ── OPCIÓN MÚLTIPLE ──────────────────────────────────────── */
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.option-btn {
+  padding: 20px 12px;
+  border-radius: 12px;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+.option-btn:hover  { opacity: 0.85; }
+.option-btn:active { transform: scale(0.96); }
+
+/* ── RESPUESTA ABIERTA ────────────────────────────────────── */
+.open-input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 2px solid #0f3460;
+  background: #0f3460;
+  color: #fff;
+  font-size: 1rem;
+  resize: vertical;
+  outline: none;
+}
+
+.open-input:focus { border-color: #e94560; }
+
+/* ── BLANKS ───────────────────────────────────────────────── */
+.blanks-text { font-size: 1.2rem; line-height: 2; }
+
+.blank-input {
+  display: inline-block;
+  width: 120px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  border-bottom: 2px solid #e94560;
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+  text-align: center;
+  outline: none;
+}
+
+/* ── NUBE DE PALABRAS ─────────────────────────────────────── */
+.word-input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 10px;
+  border: 2px solid #0f3460;
+  background: #0f3460;
+  color: #fff;
+  font-size: 1.2rem;
+  text-align: center;
+  outline: none;
+}
+
+.word-input:focus { border-color: #e94560; }
+
+/* ── DIBUJAR ──────────────────────────────────────────────── */
+.draw-canvas {
+  border-radius: 12px;
+  cursor: crosshair;
+  touch-action: none;
+  width: 100%;
+}
+
+.draw-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.draw-controls input[type="color"] {
+  width: 40px; height: 40px;
+  padding: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.draw-controls input[type="range"] { flex: 1; }
+
+/* ── RESPONDIDO ───────────────────────────────────────────── */
+.answered-screen, .ended-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 0;
+  text-align: center;
+}
+
+.check-circle {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: #27ae60;
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ended-screen h1 { font-size: 4rem; }
