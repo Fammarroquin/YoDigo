@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YoDigo</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div class="home-container">
+
+    <!-- LOGO -->
+    <div class="logo">
+      <h1>Yo<span>Digo</span></h1>
+      <p>Aprende jugando</p>
+    </div>
+
+    <!-- INGRESAR CON PIN -->
+    <div class="card" id="join-card">
+      <h2>Unirse a sesión</h2>
+      <input
+        type="number"
+        id="pin-input"
+        placeholder="Ingresa el PIN"
+        maxlength="6"
+      />
+      <input
+        type="text"
+        id="name-input"
+        placeholder="Tu nombre"
+        maxlength="30"
+      />
+      <button class="btn-primary" onclick="joinSession()">Entrar</button>
+      <p id="join-error" class="error-msg"></p>
+    </div>
+
+    <!-- SEPARADOR -->
+    <div class="divider">
+      <span>o</span>
+    </div>
+
+    <!-- ACCESO PRESENTADOR -->
+    <div class="card" id="presenter-card">
+      <h2>Soy el presentador</h2>
+      <button class="btn-secondary" onclick="goToPresenter()">
+        Ir al panel
+      </button>
+    </div>
+
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    async function joinSession() {
+      const pin = document.getElementById('pin-input').value.trim();
+      const name = document.getElementById('name-input').value.trim();
+      const errorEl = document.getElementById('join-error');
+
+      errorEl.textContent = '';
+
+      if (pin.length !== 6) {
+        errorEl.textContent = 'El PIN debe tener 6 dígitos';
+        return;
+      }
+      if (!name) {
+        errorEl.textContent = 'Ingresa tu nombre';
+        return;
+      }
+
+      const btn = document.querySelector('#join-card .btn-primary');
+      btn.textContent = 'Buscando...';
+      btn.disabled = true;
+
+      const result = await Sessions.getByPin(pin);
+
+      if (!result.success) {
+        errorEl.textContent = 'PIN no encontrado';
+        btn.textContent = 'Entrar';
+        btn.disabled = false;
+        return;
+      }
+
+      if (result.data.status === 'ended') {
+        errorEl.textContent = 'Esta sesión ya terminó';
+        btn.textContent = 'Entrar';
+        btn.disabled = false;
+        return;
+      }
+
+      // Guardar datos en sessionStorage
+      sessionStorage.setItem('session_id', result.data.id);
+      sessionStorage.setItem('session_pin', pin);
+      sessionStorage.setItem('participant_name', name);
+
+      // Ir a la vista del participante
+      window.location.href = 'participant.html';
+    }
+
+    function goToPresenter() {
+      window.location.href = 'presenter.html';
+    }
+
+    // Permitir Enter en los inputs
+    document.getElementById('pin-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') joinSession();
+    });
+    document.getElementById('name-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') joinSession();
+    });
+  </script>
+
+</body>
+</html>
