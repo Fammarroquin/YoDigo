@@ -1,0 +1,190 @@
+/* ── HEADER ───────────────────────────────────────────────── */
+.presenter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #16213e;
+  border-bottom: 1px solid #0f3460;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo-small {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.logo-small span { color: #e94560; }
+
+.session-info {
+  display: flex;
+  gap: 20px;
+  font-size: 0.95rem;
+  color: #aaa;
+}
+
+.session-info strong { color: #fff; font-size: 1.1rem; }
+
+.hidden { display: none !important; }
+
+/* ── MAIN ─────────────────────────────────────────────────── */
+.presenter-main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+/* ── LISTA PRESENTACIONES ─────────────────────────────────── */
+.presentations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.presentation-card {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.presentation-card strong { display: block; font-size: 1rem; }
+.presentation-card small  { color: #aaa; font-size: 0.85rem; }
+
+.card-actions { display: flex; gap: 10px; }
+
+/* ── SALA DE ESPERA ───────────────────────────────────────── */
+.waiting-room {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 0;
+}
+
+.pin-display {
+  background: #16213e;
+  border-radius: 16px;
+  padding: 32px 48px;
+  text-align: center;
+}
+
+.pin-display p { color: #aaa; margin-bottom: 8px; }
+.pin-display h1 { font-size: 4rem; letter-spacing: 8px; color: #e94560; }
+
+.participants-box {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 100%;
+  text-align: center;
+}
+
+.participants-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.name-tag {
+  background: #0f3460;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+}
+
+/* ── SLIDE ACTIVO ─────────────────────────────────────────── */
+.slide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.slide-controls { display: flex; gap: 10px; }
+
+.slide-display {
+  background: #16213e;
+  border-radius: 16px;
+  padding: 40px;
+  min-height: 220px;
+  margin-bottom: 24px;
+}
+
+.slide-type-badge {
+  display: inline-block;
+  background: #e94560;
+  color: #fff;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.slide-question {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.slide-media {
+  max-width: 100%;
+  border-radius: 10px;
+  margin-top: 16px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.option-box {
+  padding: 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.option-0 { background: #e74c3c; }
+.option-1 { background: #2980b9; }
+.option-2 { background: #27ae60; }
+.option-3 { background: #f39c12; }
+
+/* ── RESPUESTAS ───────────────────────────────────────────── */
+.responses-panel {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+
+.responses-panel h3 { margin-bottom: 12px; }
+
+/* ── BOTONES EXTRA ────────────────────────────────────────── */
+.btn-sm { padding: 8px 16px; font-size: 0.85rem; width: auto; }
+
+.btn-danger {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-danger:hover { background: #a93226; }
+
+.loading-msg { color: #aaa; text-align: center; padding: 20px 0; }

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YoDigo — Presentador</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/presenter.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="presenter-header">
+    <div class="logo-small">Yo<span>Digo</span></div>
+    <div id="session-info" class="session-info hidden">
+      <span>PIN: <strong id="session-pin">------</strong></span>
+      <span id="participant-count">0 participantes</span>
+    </div>
+    <button class="btn-danger" id="end-btn" onclick="endSession()" style="display:none">
+      Terminar sesión
+    </button>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="presenter-main">
+
+    <!-- VISTA 1: Seleccionar presentación -->
+    <div id="view-select" class="view">
+      <h2>Selecciona una presentación</h2>
+      <button class="btn-primary btn-sm" onclick="goToEditor()">
+        + Nueva presentación
+      </button>
+      <div id="presentations-list" class="presentations-list">
+        <p class="loading-msg">Cargando...</p>
+      </div>
+    </div>
+
+    <!-- VISTA 2: Sala de espera -->
+    <div id="view-waiting" class="view hidden">
+      <div class="waiting-room">
+        <h2>Sala de espera</h2>
+        <div class="pin-display">
+          <p>PIN de sesión</p>
+          <h1 id="big-pin">------</h1>
+        </div>
+        <div class="participants-box">
+          <p id="waiting-count">Esperando participantes...</p>
+          <div id="participants-names" class="participants-names"></div>
+        </div>
+        <button class="btn-primary" onclick="startPresentation()">
+          Iniciar presentación
+        </button>
+      </div>
+    </div>
+
+    <!-- VISTA 3: Presentación activa -->
+    <div id="view-presenting" class="view hidden">
+      <div class="slide-header">
+        <span id="slide-counter">Slide 1 / 1</span>
+        <div class="slide-controls">
+          <button class="btn-secondary btn-sm" onclick="prevSlide()">← Anterior</button>
+          <button class="btn-primary btn-sm" onclick="nextSlide()">Siguiente →</button>
+        </div>
+      </div>
+
+      <div id="slide-display" class="slide-display">
+        <!-- El slide actual se renderiza aquí -->
+      </div>
+
+      <div class="responses-panel">
+        <h3>Respuestas: <span id="response-count">0</span></h3>
+        <div id="responses-display"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    // ── ESTADO ───────────────────────────────────────────────
+    let currentSession = null;
+    let currentSlides  = [];
+    let currentSlideIndex = 0;
+    let pollingInterval = null;
+
+    // ── INICIO ───────────────────────────────────────────────
+    window.addEventListener('load', async () => {
+      await loadPresentations();
+    });
+
+    async function loadPresentations() {
+      const result = await Presentations.getAll();
+      const list = document.getElementById('presentations-list');
+
+      if (!result.success || result.data.length === 0) {
+        list.innerHTML = '<p class="loading-msg">No hay presentaciones aún. Crea una.</p>';
+        return;
+      }
+
+      list.innerHTML = result.data.map(p => `
+        <div class="presentation-card">
+          <div>
+            <strong>${p.name}</strong>
+            <small>${p.description || ''}</small>
+          </div>
+          <div class="card-actions">
+            <button class="btn-secondary btn-sm" onclick="editPresentation('${p.id}')">Editar</button>
+            <button class="btn-primary btn-sm" onclick="startSession('${p.id}')">Iniciar</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── SESIÓN ───────────────────────────────────────────────
+    async function startSession(presentation_id) {
+      const result = await Sessions.create(presentation_id);
+      if (!result.success) { alert('Error al crear sesión'); return; }
+
+      currentSession = result;
+      document.getElementById('session-pin').textContent = result.pin;
+      document.getElementById('big-pin').textContent = result.pin;
+      document.getElementById('session-info').classList.remove('hidden');
+      document.getElementById('end-btn').style.display = 'block';
+
+      showView('view-waiting');
+      startPollingParticipants();
+    }
+
+    async function startPresentation() {
+      await Sessions.update({ id: currentSession.id, status: 'active' });
+      const slidesResult = await Slides.getAll(currentSession.presentation_id);
+      currentSlides = slidesResult.data;
+      currentSlideIndex = 0;
+
+      stopPolling();
+      showView('view-presenting');
+      renderSlide();
+      startPollingResponses();
+    }
+
+    async function endSession() {
+      if (!confirm('¿Terminar la sesión?')) return;
+      await Sessions.update({ id: currentSession.id, status: 'ended' });
+      stopPolling();
+      currentSession = null;
+      document.getElementById('session-info').classList.add('hidden');
+      document.getElementById('end-btn').style.display = 'none';
+      showView('view-select');
+      await loadPresentations();
+    }
+
+    // ── SLIDES ───────────────────────────────────────────────
+    function renderSlide() {
+      const slide = currentSlides[currentSlideIndex];
+      const total = currentSlides.length;
+      document.getElementById('slide-counter').textContent =
+        `Slide ${currentSlideIndex + 1} / ${total}`;
+
+      const display = document.getElementById('slide-display');
+      display.innerHTML = `
+        <div class="slide-type-badge">${slideTypeLabel(slide.type)}</div>
+        <h2 class="slide-question">${slide.question}</h2>
+        ${slide.type === 'multiple' ? renderOptions(slide.options) : ''}
+        ${slide.media_url ? `<img src="${slide.media_url}" class="slide-media"/>` : ''}
+      `;
+      document.getElementById('responses-display').innerHTML = '';
+      document.getElementById('response-count').textContent = '0';
+    }
+
+    function renderOptions(options) {
+      if (!options) return '';
+      return `<div class="options-grid">
+        ${options.split(',').map((o, i) =>
+          `<div class="option-box option-${i}">${o.trim()}</div>`
+        ).join('')}
+      </div>`;
+    }
+
+    function slideTypeLabel(type) {
+      const labels = {
+        multiple: 'Opción múltiple',
+        open: 'Respuesta abierta',
+        blanks: 'Completar espacios',
+        wordcloud: 'Nube de palabras',
+        drawing: 'Dibujar'
+      };
+      return labels[type] || type;
+    }
+
+    function prevSlide() {
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        renderSlide();
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlideIndex < currentSlides.length - 1) {
+        currentSlideIndex++;
+        renderSlide();
+      }
+    }
+
+    // ── POLLING ──────────────────────────────────────────────
+    function startPollingParticipants() {
+      pollingInterval = setInterval(async () => {
+        const result = await Responses.get(currentSession.id, null);
+        const names = [...new Set(result.data.map(r => r.participant))];
+        document.getElementById('waiting-count').textContent =
+          `${names.length} participante(s) conectado(s)`;
+        document.getElementById('participants-names').innerHTML =
+          names.map(n => `<span class="name-tag">${n}</span>`).join('');
+        document.getElementById('participant-count').textContent =
+          `${names.length} participantes`;
+      }, 3000);
+    }
+
+    function startPollingResponses() {
+      pollingInterval = setInterval(async () => {
+        const slide = currentSlides[currentSlideIndex];
+        const result = await Responses.count(currentSession.id, slide.id);
+        document.getElementById('response-count').textContent = result.count || 0;
+      }, 2000);
+    }
+
+    function stopPolling() {
+      if (pollingInterval) clearInterval(pollingInterval);
+    }
+
+    // ── NAVEGACIÓN ───────────────────────────────────────────
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function goToEditor() { window.location.href = 'editor.html'; }
+    function editPresentation(id) {
+      window.location.href = `editor.html?id=${id}`;
+    }
+  </script>
+
+</body>
+</html>
