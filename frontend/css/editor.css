@@ -1,0 +1,140 @@
+/* ── LAYOUT ───────────────────────────────────────────────── */
+.editor-main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.editor-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.editor-top input { flex: 1; min-width: 200px; }
+
+.editor-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .editor-body { grid-template-columns: 1fr; }
+}
+
+/* ── PANEL SLIDES ─────────────────────────────────────────── */
+.slides-panel {
+  background: #16213e;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slides-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slides-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.slide-thumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0f3460;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border 0.15s;
+}
+
+.slide-thumb:hover  { border-color: #e94560; }
+.slide-thumb.active { border-color: #e94560; }
+
+.slide-num {
+  background: #e94560;
+  color: #fff;
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.slide-type-tag {
+  color: #aaa;
+  font-size: 0.75rem;
+  display: block;
+}
+
+.slide-thumb-q {
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+/* ── EDITOR SLIDE ─────────────────────────────────────────── */
+.slide-editor {
+  min-height: 400px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.form-group select,
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid #0f3460;
+  background: #0f3460;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  font-family: inherit;
+  transition: border 0.2s;
+}
+
+.form-group select:focus,
+.form-group input:focus,
+.form-group textarea:focus { border-color: #e94560; }
+
+.form-group textarea { resize: vertical; }
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}

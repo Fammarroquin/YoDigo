@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YoDigo — Editor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+
+  <header class="presenter-header">
+    <div class="logo-small">Yo<span>Digo</span></div>
+    <button class="btn-secondary btn-sm" onclick="window.location.href='presenter.html'">
+      ← Volver
+    </button>
+  </header>
+
+  <main class="editor-main">
+
+    <!-- INFO DE LA PRESENTACIÓN -->
+    <div class="editor-top card">
+      <input type="text" id="pres-name" placeholder="Nombre de la presentación" maxlength="60"/>
+      <input type="text" id="pres-desc" placeholder="Descripción (opcional)" maxlength="120"/>
+      <button class="btn-primary btn-sm" onclick="savePresentation()">
+        💾 Guardar presentación
+      </button>
+      <p id="pres-msg" class="success-msg"></p>
+    </div>
+
+    <div class="editor-body">
+
+      <!-- LISTA DE SLIDES -->
+      <div class="slides-panel">
+        <div class="slides-panel-header">
+          <h3>Slides</h3>
+          <button class="btn-primary btn-sm" onclick="addSlide()">+ Agregar</button>
+        </div>
+        <div id="slides-list" class="slides-list">
+          <p class="loading-msg">Guarda la presentación primero</p>
+        </div>
+      </div>
+
+      <!-- EDITOR DE SLIDE -->
+      <div class="slide-editor card" id="slide-editor">
+        <p class="loading-msg" id="slide-placeholder">
+          Selecciona o agrega un slide
+        </p>
+
+        <div id="slide-form" class="hidden">
+          <div class="form-group">
+            <label>Tipo de pregunta</label>
+            <select id="slide-type" onchange="onTypeChange()">
+              <option value="multiple">Opción múltiple</option>
+              <option value="open">Respuesta abierta</option>
+              <option value="blanks">Completar espacios</option>
+              <option value="wordcloud">Nube de palabras</option>
+              <option value="drawing">Dibujar</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Pregunta</label>
+            <textarea id="slide-question" rows="3"
+              placeholder="Escribe la pregunta..."></textarea>
+          </div>
+
+          <!-- Solo para opción múltiple -->
+          <div class="form-group" id="options-group">
+            <label>Opciones (separadas por coma)</label>
+            <input type="text" id="slide-options"
+              placeholder="Opción A, Opción B, Opción C, Opción D"/>
+            <label style="margin-top:10px">Respuesta correcta</label>
+            <input type="text" id="slide-correct"
+              placeholder="Escribe la opción correcta exacta"/>
+          </div>
+
+          <!-- Solo para blanks -->
+          <div class="form-group hidden" id="blanks-group">
+            <label>💡 Usa ___ en la pregunta para marcar el espacio en blanco</label>
+            <label style="margin-top:10px">Respuesta correcta</label>
+            <input type="text" id="blanks-correct" placeholder="Respuesta esperada"/>
+          </div>
+
+          <div class="form-group">
+            <label>URL de imagen (opcional)</label>
+            <input type="text" id="slide-media" placeholder="https://..."/>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-danger btn-sm" onclick="deleteCurrentSlide()">
+              🗑 Eliminar slide
+            </button>
+            <button class="btn-primary" onclick="saveSlide()">
+              💾 Guardar slide
+            </button>
+          </div>
+          <p id="slide-msg" class="success-msg"></p>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    // ── ESTADO ───────────────────────────────────────────────
+    let presentationId  = null;
+    let currentSlideId  = null;
+    let slides          = [];
+
+    // ── INICIO ───────────────────────────────────────────────
+    window.addEventListener('load', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      if (id) {
+        presentationId = id;
+        await loadPresentation(id);
+        await loadSlides();
+      }
+    });
+
+    async function loadPresentation(id) {
+      const result = await Presentations.get(id);
+      if (!result.success) return;
+      document.getElementById('pres-name').value = result.data.name || '';
+      document.getElementById('pres-desc').value = result.data.description || '';
+    }
+
+    // ── PRESENTACIÓN ─────────────────────────────────────────
+    async function savePresentation() {
+      const name = document.getElementById('pres-name').value.trim();
+      const desc = document.getElementById('pres-desc').value.trim();
+      const msg  = document.getElementById('pres-msg');
+
+      if (!name) { msg.textContent = 'El nombre es obligatorio'; msg.style.color='#e94560'; return; }
+
+      let result;
+      if (presentationId) {
+        result = await Presentations.update({ id: presentationId, name, description: desc });
+      } else {
+        result = await Presentations.create({ name, description: desc });
+        if (result.success) presentationId = result.id;
+      }
+
+      msg.style.color = '#4caf50';
+      msg.textContent = result.success ? '✓ Guardado' : 'Error al guardar';
+      if (result.success) await loadSlides();
+    }
+
+    // ── SLIDES ───────────────────────────────────────────────
+    async function loadSlides() {
+      if (!presentationId) return;
+      const result = await Slides.getAll(presentationId);
+      slides = result.data || [];
+      renderSlidesList();
+    }
+
+    function renderSlidesList() {
+      const list = document.getElementById('slides-list');
+      if (!slides.length) {
+        list.innerHTML = '<p class="loading-msg">Sin slides aún</p>';
+        return;
+      }
+      list.innerHTML = slides.map((s, i) => `
+        <div class="slide-thumb ${s.id === currentSlideId ? 'active' : ''}"
+          onclick="selectSlide('${s.id}')">
+          <span class="slide-num">${i + 1}</span>
+          <div>
+            <small class="slide-type-tag">${slideTypeLabel(s.type)}</small>
+            <p class="slide-thumb-q">${s.question || 'Sin pregunta'}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectSlide(id) {
+      currentSlideId = id;
+      const slide = slides.find(s => s.id === id);
+      if (!slide) return;
+
+      document.getElementById('slide-placeholder').classList.add('hidden');
+      document.getElementById('slide-form').classList.remove('hidden');
+
+      document.getElementById('slide-type').value     = slide.type || 'multiple';
+      document.getElementById('slide-question').value = slide.question || '';
+      document.getElementById('slide-options').value  = slide.options || '';
+      document.getElementById('slide-correct').value  = slide.correct || '';
+      document.getElementById('blanks-correct').value = slide.correct || '';
+      document.getElementById('slide-media').value    = slide.media_url || '';
+
+      onTypeChange();
+      renderSlidesList();
+    }
+
+    async function addSlide() {
+      if (!presentationId) {
+        alert('Guarda la presentación primero');
+        return;
+      }
+      const result = await Slides.create({
+        presentation_id: presentationId,
+        type: 'multiple',
+        question: 'Nueva pregunta',
+        options: 'Opción A,Opción B,Opción C,Opción D',
+        correct: '',
+        media_url: ''
+      });
+      if (result.success) {
+        await loadSlides();
+        selectSlide(result.id);
+      }
+    }
+
+    async function saveSlide() {
+      if (!currentSlideId) return;
+      const type = document.getElementById('slide-type').value;
+      const msg  = document.getElementById('slide-msg');
+
+      const data = {
+        id:        currentSlideId,
+        type,
+        question:  document.getElementById('slide-question').value.trim(),
+        options:   document.getElementById('slide-options').value.trim(),
+        correct:   type === 'blanks'
+                   ? document.getElementById('blanks-correct').value.trim()
+                   : document.getElementById('slide-correct').value.trim(),
+        media_url: document.getElementById('slide-media').value.trim()
+      };
+
+      const result = await Slides.update(data);
+      msg.style.color = '#4caf50';
+      msg.textContent = result.success ? '✓ Slide guardado' : 'Error';
+      if (result.success) await loadSlides();
+    }
+
+    async function deleteCurrentSlide() {
+      if (!currentSlideId || !confirm('¿Eliminar este slide?')) return;
+      await Slides.delete(currentSlideId);
+      currentSlideId = null;
+      document.getElementById('slide-form').classList.add('hidden');
+      document.getElementById('slide-placeholder').classList.remove('hidden');
+      await loadSlides();
+    }
+
+    // ── HELPERS ──────────────────────────────────────────────
+    function onTypeChange() {
+      const type = document.getElementById('slide-type').value;
+      document.getElementById('options-group').classList.toggle('hidden', type !== 'multiple');
+      document.getElementById('blanks-group').classList.toggle('hidden',  type !== 'blanks');
+    }
+
+    function slideTypeLabel(type) {
+      const labels = {
+        multiple: 'Múltiple', open: 'Abierta',
+        blanks: 'Espacios', wordcloud: 'Nube', drawing: 'Dibujo'
+      };
+      return labels[type] || type;
+    }
+  </script>
+
+</body>
+</html>
