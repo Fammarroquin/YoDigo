@@ -60,15 +60,15 @@
   <script src="js/questions/wordcloud.js"></script>
   <script src="js/questions/drawing.js"></script>
   <script>
-    // ── ESTADO ───────────────────────────────────────────────
+        // ── ESTADO ───────────────────────────────────────────────
     const sessionId   = sessionStorage.getItem('session_id');
     const sessionPin  = sessionStorage.getItem('session_pin');
     const participant = sessionStorage.getItem('participant_name');
 
-    let currentSlide     = null;
-    let pollingInterval  = null;
-    let lastSlideId      = null;
-    let answered         = false;
+    let currentSlide    = null;
+    let pollingInterval = null;
+    let lastSlideId     = null;
+    let answered        = false;
 
     // ── INICIO ───────────────────────────────────────────────
     window.addEventListener('load', () => {
@@ -76,34 +76,25 @@
         window.location.href = 'index.html';
         return;
       }
+
       document.getElementById('participant-name-header').textContent = participant;
       document.getElementById('waiting-name').textContent = `Hola, ${participant} 👋`;
-      startPolling();
-      window.addEventListener('load', () => {
-      if (!sessionId || !participant) {
-        window.location.href = 'index.html';
-        return;
-      }
-      document.getElementById('participant-name-header').textContent = participant;
-      document.getElementById('waiting-name').textContent = `Hola, ${participant} 👋`;
-      
-      // Enviar ping de conexión
+
+      // Ping de conexión
       Responses.save({
         session_id:  sessionId,
-        slide_id:    'ping',
+        slide_id:    'ping_' + sessionId,
         participant: participant,
         answer:      'connected'
       });
 
-  startPolling();
-});
+      startPolling();
     });
 
     // ── POLLING ──────────────────────────────────────────────
     function startPolling() {
       pollingInterval = setInterval(checkSession, 2500);
     }
-
 
     async function checkSession() {
       const result = await Sessions.getById(sessionId);
@@ -123,38 +114,29 @@
     }
 
     async function checkCurrentSlide(session) {
-  const slidesResult = await Slides.getAll(session.presentation_id);
-  if (!slidesResult.success || !slidesResult.data.length) return;
+      const slidesResult = await Slides.getAll(session.presentation_id);
+      if (!slidesResult.success || !slidesResult.data.length) return;
 
-  const currentSlideId = session.current_slide;
-  const activeSlide = slidesResult.data.find(s => s.id === currentSlideId)
-                   || slidesResult.data[0];
+      const activeSlide = slidesResult.data.find(s => s.id === session.current_slide)
+                      || slidesResult.data[0];
 
-  if (activeSlide.id !== lastSlideId) {
-    lastSlideId = activeSlide.id;
-    currentSlide = activeSlide;
-    answered = false;
-    showQuestion(activeSlide);
-  }
-  }
+      if (activeSlide.id !== lastSlideId) {
+        lastSlideId = activeSlide.id;
+        currentSlide = activeSlide;
+        answered = false;
+        showQuestion(activeSlide);
+      }
+    }
 
     // ── MOSTRAR PREGUNTA ─────────────────────────────────────
     function showQuestion(slide) {
       const container = document.getElementById('question-container');
 
       switch (slide.type) {
-        case 'multiple':
-          container.innerHTML = renderMultiple(slide);
-          break;
-        case 'open':
-          container.innerHTML = renderOpen(slide);
-          break;
-        case 'blanks':
-          container.innerHTML = renderBlanks(slide);
-          break;
-        case 'wordcloud':
-          container.innerHTML = renderWordcloud(slide);
-          break;
+        case 'multiple':  container.innerHTML = renderMultiple(slide);  break;
+        case 'open':      container.innerHTML = renderOpen(slide);      break;
+        case 'blanks':    container.innerHTML = renderBlanks(slide);    break;
+        case 'wordcloud': container.innerHTML = renderWordcloud(slide); break;
         case 'drawing':
           container.innerHTML = renderDrawing(slide);
           initDrawing();

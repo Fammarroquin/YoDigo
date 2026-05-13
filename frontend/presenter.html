@@ -234,6 +234,9 @@
     function startPollingParticipants() {
       pollingInterval = setInterval(async () => {
         const result = await Responses.get(currentSession.id, null);
+        if (!result.success) return;
+        
+        // Incluir pings y respuestas reales para contar participantes únicos
         const names = [...new Set(result.data.map(r => r.participant))];
         document.getElementById('waiting-count').textContent =
           `${names.length} participante(s) conectado(s)`;

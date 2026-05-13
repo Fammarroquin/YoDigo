@@ -34,9 +34,11 @@ function getResponses(session_id, slide_id) {
   const sheet = getSheet('responses');
   const data = sheetToObjects(sheet);
 
-  let filtered = data.filter(r => r.session_id === session_id);
-  if (slide_id) {
-    filtered = filtered.filter(r => r.slide_id === slide_id);
+  let filtered = data.filter(r => String(r.session_id) === String(session_id));
+  
+  // Solo filtrar por slide_id si viene un valor real
+  if (slide_id && slide_id !== 'null' && slide_id !== '') {
+    filtered = filtered.filter(r => String(r.slide_id) === String(slide_id));
   }
 
   return { success: true, data: filtered };
