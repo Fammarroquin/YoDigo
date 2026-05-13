@@ -79,12 +79,31 @@
       document.getElementById('participant-name-header').textContent = participant;
       document.getElementById('waiting-name').textContent = `Hola, ${participant} 👋`;
       startPolling();
+      window.addEventListener('load', () => {
+      if (!sessionId || !participant) {
+        window.location.href = 'index.html';
+        return;
+      }
+      document.getElementById('participant-name-header').textContent = participant;
+      document.getElementById('waiting-name').textContent = `Hola, ${participant} 👋`;
+      
+      // Enviar ping de conexión
+      Responses.save({
+        session_id:  sessionId,
+        slide_id:    'ping',
+        participant: participant,
+        answer:      'connected'
+      });
+
+  startPolling();
+});
     });
 
     // ── POLLING ──────────────────────────────────────────────
     function startPolling() {
       pollingInterval = setInterval(checkSession, 2500);
     }
+
 
     async function checkSession() {
       const result = await Sessions.getById(sessionId);
