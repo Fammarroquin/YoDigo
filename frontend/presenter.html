@@ -9,6 +9,19 @@
 </head>
 <body>
 
+  <!-- PANTALLA DE ACCESO -->
+  <div id="view-login" class="login-overlay">
+    <div class="card" style="max-width:360px;margin:auto;margin-top:20vh">
+      <div class="logo" style="text-align:center">
+        <h1>Yo<span style="color:#e94560">Digo</span></h1>
+      </div>
+      <h2>Acceso presentador</h2>
+      <input type="password" id="pass-input" placeholder="Contraseña"/>
+      <button class="btn-primary" onclick="checkPassword()">Entrar</button>
+      <p id="pass-error" class="error-msg"></p>
+    </div>
+  </div>
+
   <!-- HEADER -->
   <header class="presenter-header">
     <div class="logo-small">Yo<span>Digo</span></div>
@@ -25,7 +38,7 @@
   <main class="presenter-main">
 
     <!-- VISTA 1: Seleccionar presentación -->
-    <div id="view-select" class="view">
+    <div id="view-select" class="view hidden">
       <h2>Selecciona una presentación</h2>
       <button class="btn-primary btn-sm" onclick="goToEditor()">
         + Nueva presentación
@@ -62,11 +75,7 @@
           <button class="btn-primary btn-sm" onclick="nextSlide()">Siguiente →</button>
         </div>
       </div>
-
-      <div id="slide-display" class="slide-display">
-        <!-- El slide actual se renderiza aquí -->
-      </div>
-
+      <div id="slide-display" class="slide-display"></div>
       <div class="responses-panel">
         <h3>Respuestas: <span id="response-count">0</span></h3>
         <div id="responses-display"></div>
@@ -77,33 +86,33 @@
 
   <script src="js/api.js"></script>
   <script>
-    // ── CONTRASEÑA ───────────────────────────────────────────────
-const PRESENTER_PASS = 'yodigo2024'; // cambia esto
-
-function checkPassword() {
-  const input = document.getElementById('pass-input').value;
-  if (input === PRESENTER_PASS) {
-    document.getElementById('view-login').style.display = 'none';
-    loadPresentations();
-  } else {
-    document.getElementById('pass-error').textContent = 'Contraseña incorrecta';
-  }
-}
-
-document.getElementById('pass-input').addEventListener('keypress', e => {
-  if (e.key === 'Enter') checkPassword();
-});
     // ── ESTADO ───────────────────────────────────────────────
-    let currentSession = null;
-    let currentSlides  = [];
+    const PRESENTER_PASS  = 'yodigo2024';
+    let currentSession    = null;
+    let currentSlides     = [];
     let currentSlideIndex = 0;
-    let pollingInterval = null;
+    let pollingInterval   = null;
 
     // ── INICIO ───────────────────────────────────────────────
     window.addEventListener('load', () => {
-  // La carga la dispara checkPassword()
-  });
+      document.getElementById('pass-input').addEventListener('keypress', e => {
+        if (e.key === 'Enter') checkPassword();
+      });
+    });
 
+    // ── CONTRASEÑA ───────────────────────────────────────────
+    function checkPassword() {
+      const input = document.getElementById('pass-input').value;
+      if (input === PRESENTER_PASS) {
+        document.getElementById('view-login').style.display = 'none';
+        showView('view-select');
+        loadPresentations();
+      } else {
+        document.getElementById('pass-error').textContent = 'Contraseña incorrecta';
+      }
+    }
+
+    // ── PRESENTACIONES ───────────────────────────────────────
     async function loadPresentations() {
       const result = await Presentations.getAll();
       const list = document.getElementById('presentations-list');
@@ -142,20 +151,19 @@ document.getElementById('pass-input').addEventListener('keypress', e => {
       startPollingParticipants();
     }
 
-          async function startPresentation() {
-        await Sessions.update({ id: currentSession.id, status: 'active' });
-        const slidesResult = await Slides.getAll(currentSession.presentation_id);
-        currentSlides = slidesResult.data;
-        currentSlideIndex = 0;
+    async function startPresentation() {
+      await Sessions.update({ id: currentSession.id, status: 'active' });
+      const slidesResult = await Slides.getAll(currentSession.presentation_id);
+      currentSlides = slidesResult.data;
+      currentSlideIndex = 0;
 
-        // Sincronizar primer slide
-        await Sessions.setSlide(currentSession.id, currentSlides[0].id);
+      await Sessions.setSlide(currentSession.id, currentSlides[0].id);
 
-        stopPolling();
-        showView('view-presenting');
-        renderSlide();
-        startPollingResponses();
-      }
+      stopPolling();
+      showView('view-presenting');
+      renderSlide();
+      startPollingResponses();
+    }
 
     async function endSession() {
       if (!confirm('¿Terminar la sesión?')) return;
@@ -197,30 +205,30 @@ document.getElementById('pass-input').addEventListener('keypress', e => {
 
     function slideTypeLabel(type) {
       const labels = {
-        multiple: 'Opción múltiple',
-        open: 'Respuesta abierta',
-        blanks: 'Completar espacios',
+        multiple:  'Opción múltiple',
+        open:      'Respuesta abierta',
+        blanks:    'Completar espacios',
         wordcloud: 'Nube de palabras',
-        drawing: 'Dibujar'
+        drawing:   'Dibujar'
       };
       return labels[type] || type;
     }
 
     async function prevSlide() {
-  if (currentSlideIndex > 0) {
-    currentSlideIndex--;
-    renderSlide();
-    await Sessions.setSlide(currentSession.id, currentSlides[currentSlideIndex].id);
-  }
-}
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        renderSlide();
+        await Sessions.setSlide(currentSession.id, currentSlides[currentSlideIndex].id);
+      }
+    }
 
-async function nextSlide() {
-  if (currentSlideIndex < currentSlides.length - 1) {
-    currentSlideIndex++;
-    renderSlide();
-    await Sessions.setSlide(currentSession.id, currentSlides[currentSlideIndex].id);
-  }
-}
+    async function nextSlide() {
+      if (currentSlideIndex < currentSlides.length - 1) {
+        currentSlideIndex++;
+        renderSlide();
+        await Sessions.setSlide(currentSession.id, currentSlides[currentSlideIndex].id);
+      }
+    }
 
     // ── POLLING ──────────────────────────────────────────────
     function startPollingParticipants() {
@@ -254,23 +262,9 @@ async function nextSlide() {
       document.getElementById(id).classList.remove('hidden');
     }
 
-    function goToEditor() { window.location.href = 'editor.html'; }
-    function editPresentation(id) {
-      window.location.href = `editor.html?id=${id}`;
-    }
+    function goToEditor()          { window.location.href = 'editor.html'; }
+    function editPresentation(id)  { window.location.href = `editor.html?id=${id}`; }
   </script>
 
 </body>
-<!-- PANTALLA DE ACCESO -->
-<div id="view-login" class="login-overlay">
-  <div class="card" style="max-width:360px;margin:auto;margin-top:20vh">
-    <div class="logo" style="text-align:center">
-      <h1>Yo<span style="color:#e94560">Digo</span></h1>
-    </div>
-    <h2>Acceso presentador</h2>
-    <input type="password" id="pass-input" placeholder="Contraseña"/>
-    <button class="btn-primary" onclick="checkPassword()">Entrar</button>
-    <p id="pass-error" class="error-msg"></p>
-  </div>
-</div>
 </html>
