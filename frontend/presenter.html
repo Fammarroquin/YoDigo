@@ -77,6 +77,22 @@
 
   <script src="js/api.js"></script>
   <script>
+    // ── CONTRASEÑA ───────────────────────────────────────────────
+const PRESENTER_PASS = 'yodigo2024'; // cambia esto
+
+function checkPassword() {
+  const input = document.getElementById('pass-input').value;
+  if (input === PRESENTER_PASS) {
+    document.getElementById('view-login').style.display = 'none';
+    loadPresentations();
+  } else {
+    document.getElementById('pass-error').textContent = 'Contraseña incorrecta';
+  }
+}
+
+document.getElementById('pass-input').addEventListener('keypress', e => {
+  if (e.key === 'Enter') checkPassword();
+});
     // ── ESTADO ───────────────────────────────────────────────
     let currentSession = null;
     let currentSlides  = [];
@@ -84,9 +100,9 @@
     let pollingInterval = null;
 
     // ── INICIO ───────────────────────────────────────────────
-    window.addEventListener('load', async () => {
-      await loadPresentations();
-    });
+    window.addEventListener('load', () => {
+  // La carga la dispara checkPassword()
+  });
 
     async function loadPresentations() {
       const result = await Presentations.getAll();
@@ -126,17 +142,20 @@
       startPollingParticipants();
     }
 
-    async function startPresentation() {
-      await Sessions.update({ id: currentSession.id, status: 'active' });
-      const slidesResult = await Slides.getAll(currentSession.presentation_id);
-      currentSlides = slidesResult.data;
-      currentSlideIndex = 0;
+          async function startPresentation() {
+        await Sessions.update({ id: currentSession.id, status: 'active' });
+        const slidesResult = await Slides.getAll(currentSession.presentation_id);
+        currentSlides = slidesResult.data;
+        currentSlideIndex = 0;
 
-      stopPolling();
-      showView('view-presenting');
-      renderSlide();
-      startPollingResponses();
-    }
+        // Sincronizar primer slide
+        await Sessions.setSlide(currentSession.id, currentSlides[0].id);
+
+        stopPolling();
+        showView('view-presenting');
+        renderSlide();
+        startPollingResponses();
+      }
 
     async function endSession() {
       if (!confirm('¿Terminar la sesión?')) return;
@@ -187,19 +206,21 @@
       return labels[type] || type;
     }
 
-    function prevSlide() {
-      if (currentSlideIndex > 0) {
-        currentSlideIndex--;
-        renderSlide();
-      }
-    }
+    async function prevSlide() {
+  if (currentSlideIndex > 0) {
+    currentSlideIndex--;
+    renderSlide();
+    await Sessions.setSlide(currentSession.id, currentSlides[currentSlideIndex].id);
+  }
+}
 
-    function nextSlide() {
-      if (currentSlideIndex < currentSlides.length - 1) {
-        currentSlideIndex++;
-        renderSlide();
-      }
-    }
+async function nextSlide() {
+  if (currentSlideIndex < currentSlides.length - 1) {
+    currentSlideIndex++;
+    renderSlide();
+    await Sessions.setSlide(currentSession.id, currentSlides[currentSlideIndex].id);
+  }
+}
 
     // ── POLLING ──────────────────────────────────────────────
     function startPollingParticipants() {
@@ -240,4 +261,16 @@
   </script>
 
 </body>
+<!-- PANTALLA DE ACCESO -->
+<div id="view-login" class="login-overlay">
+  <div class="card" style="max-width:360px;margin:auto;margin-top:20vh">
+    <div class="logo" style="text-align:center">
+      <h1>Yo<span style="color:#e94560">Digo</span></h1>
+    </div>
+    <h2>Acceso presentador</h2>
+    <input type="password" id="pass-input" placeholder="Contraseña"/>
+    <button class="btn-primary" onclick="checkPassword()">Entrar</button>
+    <p id="pass-error" class="error-msg"></p>
+  </div>
+</div>
 </html>

@@ -67,3 +67,25 @@ function generatePin() {
 
   return pin;
 }
+function setCurrentSlide(data) {
+  const sheet = getSheet('sessions');
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const idCol = headers.indexOf('id');
+
+  // Agregar columna current_slide si no existe
+  let slideCol = headers.indexOf('current_slide');
+  if (slideCol === -1) {
+    const lastCol = headers.length + 1;
+    sheet.getRange(1, lastCol).setValue('current_slide');
+    slideCol = lastCol - 1;
+  }
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][idCol] === data.id) {
+      sheet.getRange(i + 1, slideCol + 1).setValue(data.slide_id);
+      return { success: true, message: 'Slide actualizado' };
+    }
+  }
+  return { success: false, message: 'Sesión no encontrada' };
+}

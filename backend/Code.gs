@@ -37,7 +37,8 @@ function handleRequest(e) {
         case 'getSessionById':      result = getSessionById(data.id); break;
         case 'getResponseCount':    result = getResponseCount(data.session_id, data.slide_id); break;
         case 'getResponseSummary':  result = getResponseSummary(data.session_id, data.slide_id); break;
-
+        case 'setCurrentSlide':     result = setCurrentSlide(data); break;
+        case 'uploadImage'    :     result = uploadImage(data); break;
         default:
             result = { error: 'Acción no reconocida: ' + action };
     }

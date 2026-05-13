@@ -5,260 +5,649 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YoDigo — Editor</title>
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/editor.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#1a1a2e; color:#fff; min-height:100vh; }
+
+    /* ── HEADER ── */
+    .editor-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 20px; background:#16213e;
+      border-bottom:1px solid #0f3460; position:sticky; top:0; z-index:100;
+    }
+    .logo-small { font-size:1.3rem; font-weight:800; }
+    .logo-small span { color:#e94560; }
+    .header-center { display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .header-center input {
+      background:transparent; border:none; border-bottom:2px solid #0f3460;
+      color:#fff; font-size:1rem; font-weight:600; text-align:center;
+      padding:4px 12px; outline:none; min-width:280px;
+    }
+    .header-center input:focus { border-color:#e94560; }
+    .header-center small { color:#aaa; font-size:0.75rem; }
+    .header-actions { display:flex; gap:10px; }
+
+    /* ── LAYOUT PRINCIPAL ── */
+    .editor-layout {
+      display:grid;
+      grid-template-columns:200px 1fr 280px;
+      height:calc(100vh - 57px);
+    }
+
+    /* ── PANEL IZQUIERDO: LISTA SLIDES ── */
+    .slides-sidebar {
+      background:#0f1b35; border-right:1px solid #0f3460;
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .slides-sidebar-header {
+      padding:12px; border-bottom:1px solid #0f3460;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .slides-sidebar-header h3 { font-size:0.85rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; }
+    .slides-scroll { overflow-y:auto; flex:1; padding:8px; display:flex; flex-direction:column; gap:6px; }
+
+    .slide-thumb {
+      background:#16213e; border-radius:8px; padding:10px;
+      cursor:pointer; border:2px solid transparent; transition:all 0.15s;
+      display:flex; align-items:center; gap:8px;
+    }
+    .slide-thumb:hover { border-color:#e94560; }
+    .slide-thumb.active { border-color:#e94560; background:#1e2d50; }
+    .slide-num {
+      background:#e94560; color:#fff; border-radius:50%;
+      width:22px; height:22px; display:flex; align-items:center;
+      justify-content:center; font-size:0.7rem; font-weight:700; flex-shrink:0;
+    }
+    .slide-thumb-info { overflow:hidden; }
+    .slide-type-badge {
+      font-size:0.65rem; color:#e94560; text-transform:uppercase;
+      letter-spacing:0.5px; font-weight:600;
+    }
+    .slide-thumb-q {
+      font-size:0.78rem; color:#ccc; white-space:nowrap;
+      overflow:hidden; text-overflow:ellipsis; max-width:130px;
+    }
+
+    /* ── CENTRO: PREVIEW TIPO KAHOOT ── */
+    .slide-preview {
+      display:flex; flex-direction:column;
+      background:#1a1a2e; overflow-y:auto;
+    }
+    .preview-area {
+      flex:1; display:flex; flex-direction:column;
+      padding:24px; gap:16px; max-width:720px; margin:0 auto; width:100%;
+    }
+
+    .preview-type-selector {
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .type-btn {
+      padding:8px 14px; border-radius:20px; border:2px solid #0f3460;
+      background:transparent; color:#aaa; font-size:0.8rem; font-weight:600;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .type-btn:hover { border-color:#e94560; color:#fff; }
+    .type-btn.active { background:#e94560; border-color:#e94560; color:#fff; }
+
+    /* Pregunta */
+    .question-preview {
+      background:#16213e; border-radius:16px; padding:20px;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .question-preview textarea {
+      background:transparent; border:none; color:#fff;
+      font-size:1.4rem; font-weight:700; width:100%;
+      resize:none; outline:none; font-family:inherit; line-height:1.4;
+    }
+    .question-preview textarea::placeholder { color:#444; }
+
+    /* Imagen */
+    .image-area {
+      background:#16213e; border-radius:16px; padding:16px;
+      display:flex; flex-direction:column; gap:10px; align-items:center;
+    }
+    .image-preview-box {
+      width:100%; max-height:180px; border-radius:10px;
+      object-fit:cover; display:none;
+    }
+    .image-upload-zone {
+      width:100%; padding:20px; border:2px dashed #0f3460;
+      border-radius:10px; text-align:center; cursor:pointer;
+      transition:border 0.2s; color:#aaa; font-size:0.85rem;
+    }
+    .image-upload-zone:hover { border-color:#e94560; color:#fff; }
+    .image-upload-zone input { display:none; }
+
+    /* Opciones múltiple */
+    .options-preview {
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    }
+    .option-preview-btn {
+      border-radius:12px; padding:18px 16px; border:none;
+      font-size:1rem; font-weight:700; color:#fff;
+      display:flex; align-items:center; gap:10px; cursor:pointer;
+      transition:opacity 0.15s;
+    }
+    .option-preview-btn:hover { opacity:0.85; }
+    .op-0 { background:#e74c3c; }
+    .op-1 { background:#2980b9; }
+    .op-2 { background:#27ae60; }
+    .op-3 { background:#f39c12; }
+    .op-icon { font-size:1.2rem; }
+    .op-input {
+      background:transparent; border:none; color:#fff;
+      font-size:0.95rem; font-weight:600; width:100%;
+      outline:none; font-family:inherit;
+    }
+    .op-input::placeholder { color:rgba(255,255,255,0.5); }
+
+    /* Respuesta abierta preview */
+    .open-preview {
+      background:#16213e; border-radius:12px; padding:20px;
+      color:#aaa; text-align:center; font-size:0.95rem;
+      border:2px dashed #0f3460;
+    }
+
+    /* Blanks preview */
+    .blanks-hint {
+      background:#16213e; border-radius:12px; padding:16px;
+      font-size:0.85rem; color:#aaa; border-left:3px solid #e94560;
+    }
+
+    /* Wordcloud preview */
+    .wordcloud-preview {
+      background:#16213e; border-radius:12px; padding:20px;
+      text-align:center; color:#aaa; font-size:0.9rem;
+    }
+
+    /* Drawing preview */
+    .drawing-preview {
+      background:#16213e; border-radius:12px; padding:20px;
+      text-align:center; color:#aaa; font-size:0.9rem;
+    }
+
+    /* ── PANEL DERECHO: OPCIONES ── */
+    .options-sidebar {
+      background:#0f1b35; border-left:1px solid #0f3460;
+      padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;
+    }
+    .options-sidebar h3 { font-size:0.8rem; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+
+    .opt-group { display:flex; flex-direction:column; gap:8px; }
+    .opt-label { font-size:0.8rem; color:#aaa; }
+
+    .opt-input {
+      width:100%; padding:10px 12px; border-radius:8px;
+      border:2px solid #1a2a4a; background:#1a2a4a;
+      color:#fff; font-size:0.9rem; outline:none; font-family:inherit;
+    }
+    .opt-input:focus { border-color:#e94560; }
+
+    .correct-selector { display:flex; flex-direction:column; gap:6px; }
+    .correct-opt {
+      display:flex; align-items:center; gap:8px; padding:8px 10px;
+      border-radius:8px; cursor:pointer; border:2px solid transparent;
+      transition:all 0.15s; font-size:0.85rem;
+    }
+    .correct-opt:hover { border-color:#27ae60; }
+    .correct-opt.selected { border-color:#27ae60; background:#1a3a2a; }
+    .correct-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+
+    .save-slide-btn {
+      width:100%; padding:14px; border-radius:10px; border:none;
+      background:#e94560; color:#fff; font-size:1rem; font-weight:700;
+      cursor:pointer; transition:background 0.2s; margin-top:auto;
+    }
+    .save-slide-btn:hover { background:#c73652; }
+    .save-slide-btn:disabled { background:#555; cursor:not-allowed; }
+
+    .delete-slide-btn {
+      width:100%; padding:10px; border-radius:10px; border:2px solid #c0392b;
+      background:transparent; color:#c0392b; font-size:0.85rem; font-weight:600;
+      cursor:pointer; transition:all 0.2s;
+    }
+    .delete-slide-btn:hover { background:#c0392b; color:#fff; }
+
+    .msg { font-size:0.82rem; text-align:center; min-height:16px; }
+    .msg.ok  { color:#27ae60; }
+    .msg.err { color:#e94560; }
+
+    /* Botones generales */
+    .btn-primary {
+      padding:10px 18px; border-radius:8px; border:none;
+      background:#e94560; color:#fff; font-size:0.9rem;
+      font-weight:700; cursor:pointer; transition:background 0.2s;
+    }
+    .btn-primary:hover { background:#c73652; }
+    .btn-secondary {
+      padding:10px 18px; border-radius:8px;
+      border:2px solid #e94560; background:transparent;
+      color:#e94560; font-size:0.9rem; font-weight:600; cursor:pointer;
+    }
+    .btn-secondary:hover { background:#e94560; color:#fff; }
+    .btn-sm { padding:6px 12px; font-size:0.8rem; }
+    .hidden { display:none !important; }
+
+    /* Spinner */
+    .saving-msg { color:#aaa; font-size:0.82rem; text-align:center; }
+  </style>
 </head>
 <body>
 
-  <header class="presenter-header">
-    <div class="logo-small">Yo<span>Digo</span></div>
-    <button class="btn-secondary btn-sm" onclick="window.location.href='presenter.html'">
-      ← Volver
-    </button>
-  </header>
+<!-- HEADER -->
+<header class="editor-header">
+  <div class="logo-small">Yo<span>Digo</span></div>
+  <div class="header-center">
+    <input type="text" id="pres-name" placeholder="Nombre de la presentación"/>
+    <small id="pres-msg" class="saving-msg"></small>
+  </div>
+  <div class="header-actions">
+    <button class="btn-secondary btn-sm" onclick="window.location.href='presenter.html'">← Salir</button>
+    <button class="btn-primary btn-sm" onclick="savePresentation()">💾 Guardar</button>
+  </div>
+</header>
 
-  <main class="editor-main">
+<!-- LAYOUT -->
+<div class="editor-layout">
 
-    <!-- INFO DE LA PRESENTACIÓN -->
-    <div class="editor-top card">
-      <input type="text" id="pres-name" placeholder="Nombre de la presentación" maxlength="60"/>
-      <input type="text" id="pres-desc" placeholder="Descripción (opcional)" maxlength="120"/>
-      <button class="btn-primary btn-sm" onclick="savePresentation()">
-        💾 Guardar presentación
-      </button>
-      <p id="pres-msg" class="success-msg"></p>
+  <!-- SIDEBAR IZQUIERDA: SLIDES -->
+  <div class="slides-sidebar">
+    <div class="slides-sidebar-header">
+      <h3>Slides</h3>
+      <button class="btn-primary btn-sm" onclick="addSlide()">+</button>
     </div>
+    <div class="slides-scroll" id="slides-list">
+      <p style="color:#aaa;font-size:0.8rem;padding:8px">Guarda primero</p>
+    </div>
+  </div>
 
-    <div class="editor-body">
-
-      <!-- LISTA DE SLIDES -->
-      <div class="slides-panel">
-        <div class="slides-panel-header">
-          <h3>Slides</h3>
-          <button class="btn-primary btn-sm" onclick="addSlide()">+ Agregar</button>
-        </div>
-        <div id="slides-list" class="slides-list">
-          <p class="loading-msg">Guarda la presentación primero</p>
-        </div>
-      </div>
-
-      <!-- EDITOR DE SLIDE -->
-      <div class="slide-editor card" id="slide-editor">
-        <p class="loading-msg" id="slide-placeholder">
-          Selecciona o agrega un slide
-        </p>
-
-        <div id="slide-form" class="hidden">
-          <div class="form-group">
-            <label>Tipo de pregunta</label>
-            <select id="slide-type" onchange="onTypeChange()">
-              <option value="multiple">Opción múltiple</option>
-              <option value="open">Respuesta abierta</option>
-              <option value="blanks">Completar espacios</option>
-              <option value="wordcloud">Nube de palabras</option>
-              <option value="drawing">Dibujar</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Pregunta</label>
-            <textarea id="slide-question" rows="3"
-              placeholder="Escribe la pregunta..."></textarea>
-          </div>
-
-          <!-- Solo para opción múltiple -->
-          <div class="form-group" id="options-group">
-            <label>Opciones (separadas por coma)</label>
-            <input type="text" id="slide-options"
-              placeholder="Opción A, Opción B, Opción C, Opción D"/>
-            <label style="margin-top:10px">Respuesta correcta</label>
-            <input type="text" id="slide-correct"
-              placeholder="Escribe la opción correcta exacta"/>
-          </div>
-
-          <!-- Solo para blanks -->
-          <div class="form-group hidden" id="blanks-group">
-            <label>💡 Usa ___ en la pregunta para marcar el espacio en blanco</label>
-            <label style="margin-top:10px">Respuesta correcta</label>
-            <input type="text" id="blanks-correct" placeholder="Respuesta esperada"/>
-          </div>
-
-          <div class="form-group">
-            <label>URL de imagen (opcional)</label>
-            <input type="text" id="slide-media" placeholder="https://..."/>
-          </div>
-
-          <div class="form-actions">
-            <button class="btn-danger btn-sm" onclick="deleteCurrentSlide()">
-              🗑 Eliminar slide
-            </button>
-            <button class="btn-primary" onclick="saveSlide()">
-              💾 Guardar slide
-            </button>
-          </div>
-          <p id="slide-msg" class="success-msg"></p>
-        </div>
-
+  <!-- CENTRO: PREVIEW -->
+  <div class="slide-preview" id="slide-preview">
+    <div class="preview-area" id="preview-area">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:#aaa">
+        <div style="font-size:3rem">📝</div>
+        <p>Selecciona o agrega un slide</p>
       </div>
     </div>
+  </div>
 
-  </main>
+  <!-- SIDEBAR DERECHA: OPCIONES -->
+  <div class="options-sidebar" id="options-sidebar">
+    <div style="color:#aaa;font-size:0.85rem;text-align:center;padding:20px 0">
+      Selecciona un slide para editarlo
+    </div>
+  </div>
 
-  <script src="js/api.js"></script>
-  <script>
-    // ── ESTADO ───────────────────────────────────────────────
-    let presentationId  = null;
-    let currentSlideId  = null;
-    let slides          = [];
+</div>
 
-    // ── INICIO ───────────────────────────────────────────────
-    window.addEventListener('load', async () => {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      if (id) {
-        presentationId = id;
-        await loadPresentation(id);
-        await loadSlides();
+<script src="js/api.js"></script>
+<script>
+// ── ESTADO ────────────────────────────────────────────────────
+let presentationId = null;
+let slides = [];
+let currentSlideId = null;
+let currentType = 'multiple';
+const COLORS = ['#e74c3c','#2980b9','#27ae60','#f39c12'];
+const ICONS  = ['▲','◆','●','★'];
+
+// ── INICIO ────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (id) {
+    presentationId = id;
+    await loadPresentation(id);
+    await loadSlides();
+  }
+});
+
+async function loadPresentation(id) {
+  const result = await Presentations.get(id);
+  if (result.success) {
+    document.getElementById('pres-name').value = result.data.name || '';
+  }
+}
+
+// ── GUARDAR PRESENTACIÓN ──────────────────────────────────────
+async function savePresentation() {
+  const name = document.getElementById('pres-name').value.trim();
+  const msg  = document.getElementById('pres-msg');
+  if (!name) { msg.textContent = 'Escribe un nombre'; return; }
+
+  msg.textContent = 'Guardando...';
+  let result;
+  if (presentationId) {
+    result = await Presentations.update({ id: presentationId, name });
+  } else {
+    result = await Presentations.create({ name });
+    if (result.success) presentationId = result.id;
+  }
+  msg.textContent = result.success ? '✓ Guardado' : 'Error';
+  if (result.success) await loadSlides();
+}
+
+// ── SLIDES ────────────────────────────────────────────────────
+async function loadSlides() {
+  if (!presentationId) return;
+  const result = await Slides.getAll(presentationId);
+  slides = result.data || [];
+  renderSlidesList();
+}
+
+function renderSlidesList() {
+  const list = document.getElementById('slides-list');
+  if (!slides.length) {
+    list.innerHTML = '<p style="color:#aaa;font-size:0.8rem;padding:8px">Sin slides aún</p>';
+    return;
+  }
+  list.innerHTML = slides.map((s, i) => `
+    <div class="slide-thumb ${s.id === currentSlideId ? 'active' : ''}"
+      onclick="selectSlide('${s.id}')">
+      <div class="slide-num">${i+1}</div>
+      <div class="slide-thumb-info">
+        <div class="slide-type-badge">${typeLabel(s.type)}</div>
+        <div class="slide-thumb-q">${s.question || 'Sin pregunta'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectSlide(id) {
+  currentSlideId = id;
+  const slide = slides.find(s => s.id === id);
+  if (!slide) return;
+  currentType = slide.type || 'multiple';
+  renderSlidesList();
+  renderPreview(slide);
+  renderOptionsSidebar(slide);
+}
+
+async function addSlide() {
+  if (!presentationId) { alert('Guarda la presentación primero'); return; }
+  const result = await Slides.create({
+    presentation_id: presentationId,
+    type: 'multiple',
+    question: '',
+    options: 'Opción A,Opción B,Opción C,Opción D',
+    correct: '',
+    media_url: ''
+  });
+  if (result.success) {
+    await loadSlides();
+    selectSlide(result.id);
+  }
+}
+
+// ── PREVIEW CENTRAL ───────────────────────────────────────────
+function renderPreview(slide) {
+  const area = document.getElementById('preview-area');
+  const opts = slide.options ? slide.options.split(',') : ['Opción A','Opción B','Opción C','Opción D'];
+
+  area.innerHTML = `
+    <!-- Selector de tipo -->
+    <div class="preview-type-selector">
+      ${['multiple','open','blanks','wordcloud','drawing'].map(t => `
+        <button class="type-btn ${slide.type===t?'active':''}"
+          onclick="changeType('${t}')">${typeLabel(t)}</button>
+      `).join('')}
+    </div>
+
+    <!-- Imagen -->
+    <div class="image-area">
+      ${slide.media_url
+        ? `<img id="img-preview" class="image-preview-box" src="${slide.media_url}"
+             style="display:block" onerror="this.style.display='none'"/>`
+        : `<img id="img-preview" class="image-preview-box"/>`
       }
-    });
+      <div class="image-upload-zone" onclick="document.getElementById('img-upload').click()">
+        <input type="file" id="img-upload" accept="image/*" onchange="handleImageUpload(event)"/>
+        📷 Haz clic para subir una imagen
+      </div>
+    </div>
 
-    async function loadPresentation(id) {
-      const result = await Presentations.get(id);
-      if (!result.success) return;
-      document.getElementById('pres-name').value = result.data.name || '';
-      document.getElementById('pres-desc').value = result.data.description || '';
-    }
+    <!-- Pregunta -->
+    <div class="question-preview">
+      <textarea id="q-text" rows="3"
+        placeholder="Escribe tu pregunta aquí..."
+        oninput="syncQuestion()">${slide.question || ''}</textarea>
+    </div>
 
-    // ── PRESENTACIÓN ─────────────────────────────────────────
-    async function savePresentation() {
-      const name = document.getElementById('pres-name').value.trim();
-      const desc = document.getElementById('pres-desc').value.trim();
-      const msg  = document.getElementById('pres-msg');
+    <!-- Respuestas según tipo -->
+    <div id="answers-area">
+      ${renderAnswersArea(slide, opts)}
+    </div>
+  `;
+}
 
-      if (!name) { msg.textContent = 'El nombre es obligatorio'; msg.style.color='#e94560'; return; }
+function renderAnswersArea(slide, opts) {
+  switch(slide.type) {
+    case 'multiple':
+      return `<div class="options-preview">
+        ${opts.map((o,i) => `
+          <button class="option-preview-btn op-${i}">
+            <span class="op-icon">${ICONS[i]}</span>
+            <input class="op-input" type="text" value="${o.trim()}"
+              placeholder="Opción ${i+1}"
+              oninput="syncOptions()"
+              id="opt-${i}"/>
+          </button>
+        `).join('')}
+      </div>`;
+    case 'open':
+      return `<div class="open-preview">
+        📝 Los participantes escribirán su respuesta libremente
+      </div>`;
+    case 'blanks':
+      return `<div class="blanks-hint">
+        💡 Usa <strong>___</strong> en la pregunta para marcar el espacio en blanco.<br>
+        Ej: "El cielo es ___ de color"
+      </div>`;
+    case 'wordcloud':
+      return `<div class="wordcloud-preview">
+        ☁️ Los participantes enviarán una palabra — se mostrará como nube
+      </div>`;
+    case 'drawing':
+      return `<div class="drawing-preview">
+        🎨 Los participantes dibujarán su respuesta en un canvas
+      </div>`;
+    default: return '';
+  }
+}
 
-      let result;
-      if (presentationId) {
-        result = await Presentations.update({ id: presentationId, name, description: desc });
-      } else {
-        result = await Presentations.create({ name, description: desc });
-        if (result.success) presentationId = result.id;
-      }
+// ── SIDEBAR DERECHA ───────────────────────────────────────────
+function renderOptionsSidebar(slide) {
+  const opts = slide.options ? slide.options.split(',') : [];
+  const sidebar = document.getElementById('options-sidebar');
 
-      msg.style.color = '#4caf50';
-      msg.textContent = result.success ? '✓ Guardado' : 'Error al guardar';
-      if (result.success) await loadSlides();
-    }
+  sidebar.innerHTML = `
+    <h3>Configuración</h3>
 
-    // ── SLIDES ───────────────────────────────────────────────
-    async function loadSlides() {
-      if (!presentationId) return;
-      const result = await Slides.getAll(presentationId);
-      slides = result.data || [];
-      renderSlidesList();
-    }
-
-    function renderSlidesList() {
-      const list = document.getElementById('slides-list');
-      if (!slides.length) {
-        list.innerHTML = '<p class="loading-msg">Sin slides aún</p>';
-        return;
-      }
-      list.innerHTML = slides.map((s, i) => `
-        <div class="slide-thumb ${s.id === currentSlideId ? 'active' : ''}"
-          onclick="selectSlide('${s.id}')">
-          <span class="slide-num">${i + 1}</span>
-          <div>
-            <small class="slide-type-tag">${slideTypeLabel(s.type)}</small>
-            <p class="slide-thumb-q">${s.question || 'Sin pregunta'}</p>
-          </div>
+    ${slide.type === 'multiple' ? `
+      <div class="opt-group">
+        <div class="opt-label">Respuesta correcta</div>
+        <div class="correct-selector" id="correct-selector">
+          ${opts.map((o,i) => `
+            <div class="correct-opt ${slide.correct===o.trim()?'selected':''}"
+              onclick="selectCorrect('${o.trim()}')"
+              id="correct-${i}">
+              <div class="correct-dot" style="background:${COLORS[i]}"></div>
+              <span>${o.trim()}</span>
+            </div>
+          `).join('')}
         </div>
-      `).join('');
+      </div>
+    ` : ''}
+
+    ${slide.type === 'blanks' ? `
+      <div class="opt-group">
+        <div class="opt-label">Respuesta correcta esperada</div>
+        <input class="opt-input" type="text" id="blanks-correct"
+          value="${slide.correct || ''}" placeholder="Respuesta exacta"/>
+      </div>
+    ` : ''}
+
+    ${slide.type === 'open' || slide.type === 'wordcloud' || slide.type === 'drawing' ? `
+      <div style="color:#aaa;font-size:0.82rem;padding:8px 0">
+        Este tipo no requiere respuesta correcta
+      </div>
+    ` : ''}
+
+    <div class="opt-group">
+      <div class="opt-label">URL de imagen (alternativa)</div>
+      <input class="opt-input" type="text" id="media-url"
+        value="${slide.media_url || ''}" placeholder="https://..."
+        oninput="syncMediaUrl()"/>
+    </div>
+
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+      <p class="msg" id="slide-msg"></p>
+      <button class="save-slide-btn" onclick="saveSlide()">💾 Guardar slide</button>
+      <button class="delete-slide-btn" onclick="deleteCurrentSlide()">🗑 Eliminar slide</button>
+    </div>
+  `;
+}
+
+// ── SYNC ──────────────────────────────────────────────────────
+function syncQuestion() {
+  // solo actualiza en memoria, se guarda al hacer click
+}
+
+function syncOptions() {
+  // actualiza el selector de correcta en sidebar
+  const slide = slides.find(s => s.id === currentSlideId);
+  if (!slide) return;
+  const opts = [0,1,2,3].map(i => {
+    const el = document.getElementById(`opt-${i}`);
+    return el ? el.value.trim() : '';
+  }).filter(Boolean);
+
+  const selector = document.getElementById('correct-selector');
+  if (!selector) return;
+  selector.innerHTML = opts.map((o,i) => `
+    <div class="correct-opt ${slide.correct===o?'selected':''}"
+      onclick="selectCorrect('${o}')" id="correct-${i}">
+      <div class="correct-dot" style="background:${COLORS[i]}"></div>
+      <span>${o}</span>
+    </div>
+  `).join('');
+}
+
+function selectCorrect(val) {
+  document.querySelectorAll('.correct-opt').forEach(el => el.classList.remove('selected'));
+  const slide = slides.find(s => s.id === currentSlideId);
+  if (slide) slide.correct = val;
+  // resaltar el seleccionado
+  document.querySelectorAll('.correct-opt').forEach(el => {
+    if (el.querySelector('span') && el.querySelector('span').textContent === val) {
+      el.classList.add('selected');
     }
+  });
+}
 
-    function selectSlide(id) {
-      currentSlideId = id;
-      const slide = slides.find(s => s.id === id);
-      if (!slide) return;
+function syncMediaUrl() {
+  const url = document.getElementById('media-url').value.trim();
+  const img = document.getElementById('img-preview');
+  if (img && url) { img.src = url; img.style.display = 'block'; }
+}
 
-      document.getElementById('slide-placeholder').classList.add('hidden');
-      document.getElementById('slide-form').classList.remove('hidden');
+// ── SUBIR IMAGEN ──────────────────────────────────────────────
+async function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-      document.getElementById('slide-type').value     = slide.type || 'multiple';
-      document.getElementById('slide-question').value = slide.question || '';
-      document.getElementById('slide-options').value  = slide.options || '';
-      document.getElementById('slide-correct').value  = slide.correct || '';
-      document.getElementById('blanks-correct').value = slide.correct || '';
-      document.getElementById('slide-media').value    = slide.media_url || '';
+  // Preview local inmediato
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('img-preview');
+    if (img) { img.src = e.target.result; img.style.display = 'block'; }
+  };
+  reader.readAsDataURL(file);
 
-      onTypeChange();
-      renderSlidesList();
-    }
+  // Subir a Apps Script (como base64)
+  const base64 = await fileToBase64(file);
+  const result = await apiCall('uploadImage', {
+    name: file.name,
+    type: file.type,
+    data: base64
+  });
 
-    async function addSlide() {
-      if (!presentationId) {
-        alert('Guarda la presentación primero');
-        return;
-      }
-      const result = await Slides.create({
-        presentation_id: presentationId,
-        type: 'multiple',
-        question: 'Nueva pregunta',
-        options: 'Opción A,Opción B,Opción C,Opción D',
-        correct: '',
-        media_url: ''
-      });
-      if (result.success) {
-        await loadSlides();
-        selectSlide(result.id);
-      }
-    }
+  if (result.success) {
+    const urlInput = document.getElementById('media-url');
+    if (urlInput) urlInput.value = result.url;
+  }
+}
 
-    async function saveSlide() {
-      if (!currentSlideId) return;
-      const type = document.getElementById('slide-type').value;
-      const msg  = document.getElementById('slide-msg');
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
 
-      const data = {
-        id:        currentSlideId,
-        type,
-        question:  document.getElementById('slide-question').value.trim(),
-        options:   document.getElementById('slide-options').value.trim(),
-        correct:   type === 'blanks'
-                   ? document.getElementById('blanks-correct').value.trim()
-                   : document.getElementById('slide-correct').value.trim(),
-        media_url: document.getElementById('slide-media').value.trim()
-      };
+// ── CAMBIAR TIPO ──────────────────────────────────────────────
+function changeType(type) {
+  currentType = type;
+  const slide = slides.find(s => s.id === currentSlideId);
+  if (!slide) return;
+  slide.type = type;
+  renderPreview(slide);
+  renderOptionsSidebar(slide);
+}
 
-      const result = await Slides.update(data);
-      msg.style.color = '#4caf50';
-      msg.textContent = result.success ? '✓ Slide guardado' : 'Error';
-      if (result.success) await loadSlides();
-    }
+// ── GUARDAR SLIDE ─────────────────────────────────────────────
+async function saveSlide() {
+  if (!currentSlideId) return;
+  const msg = document.getElementById('slide-msg');
+  msg.textContent = 'Guardando...';
+  msg.className = 'msg';
 
-    async function deleteCurrentSlide() {
-      if (!currentSlideId || !confirm('¿Eliminar este slide?')) return;
-      await Slides.delete(currentSlideId);
-      currentSlideId = null;
-      document.getElementById('slide-form').classList.add('hidden');
-      document.getElementById('slide-placeholder').classList.remove('hidden');
-      await loadSlides();
-    }
+  const opts = [0,1,2,3].map(i => {
+    const el = document.getElementById(`opt-${i}`);
+    return el ? el.value.trim() : null;
+  }).filter(Boolean);
 
-    // ── HELPERS ──────────────────────────────────────────────
-    function onTypeChange() {
-      const type = document.getElementById('slide-type').value;
-      document.getElementById('options-group').classList.toggle('hidden', type !== 'multiple');
-      document.getElementById('blanks-group').classList.toggle('hidden',  type !== 'blanks');
-    }
+  const slide = slides.find(s => s.id === currentSlideId);
 
-    function slideTypeLabel(type) {
-      const labels = {
-        multiple: 'Múltiple', open: 'Abierta',
-        blanks: 'Espacios', wordcloud: 'Nube', drawing: 'Dibujo'
-      };
-      return labels[type] || type;
-    }
-  </script>
+  const data = {
+    id:       currentSlideId,
+    type:     currentType,
+    question: document.getElementById('q-text')?.value.trim() || '',
+    options:  opts.join(','),
+    correct:  currentType === 'blanks'
+              ? (document.getElementById('blanks-correct')?.value.trim() || '')
+              : (slide?.correct || ''),
+    media_url: document.getElementById('media-url')?.value.trim() || ''
+  };
+
+  const result = await Slides.update(data);
+  msg.textContent = result.success ? '✓ Guardado' : '✗ Error';
+  msg.className   = result.success ? 'msg ok' : 'msg err';
+  if (result.success) await loadSlides();
+}
+
+async function deleteCurrentSlide() {
+  if (!currentSlideId || !confirm('¿Eliminar este slide?')) return;
+  await Slides.delete(currentSlideId);
+  currentSlideId = null;
+  document.getElementById('preview-area').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;
+      justify-content:center;height:100%;gap:16px;color:#aaa">
+      <div style="font-size:3rem">📝</div>
+      <p>Selecciona o agrega un slide</p>
+    </div>`;
+  document.getElementById('options-sidebar').innerHTML =
+    '<div style="color:#aaa;font-size:0.85rem;text-align:center;padding:20px 0">Selecciona un slide</div>';
+  await loadSlides();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function typeLabel(type) {
+  return { multiple:'Múltiple', open:'Abierta', blanks:'Espacios',
+           wordcloud:'Nube', drawing:'Dibujo' }[type] || type;
+}
+</script>
 
 </body>
 </html>

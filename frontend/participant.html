@@ -104,20 +104,20 @@
     }
 
     async function checkCurrentSlide(session) {
-      const slidesResult = await Slides.getAll(session.presentation_id);
-      if (!slidesResult.success || !slidesResult.data.length) return;
+  const slidesResult = await Slides.getAll(session.presentation_id);
+  if (!slidesResult.success || !slidesResult.data.length) return;
 
-      // El presentador controla el slide activo por orden
-      // Usamos el campo current_slide de la sesión (lo agregaremos)
-      const activeSlide = slidesResult.data[0]; // por ahora el primero
+  const currentSlideId = session.current_slide;
+  const activeSlide = slidesResult.data.find(s => s.id === currentSlideId)
+                   || slidesResult.data[0];
 
-      if (activeSlide.id !== lastSlideId) {
-        lastSlideId = activeSlide.id;
-        currentSlide = activeSlide;
-        answered = false;
-        showQuestion(activeSlide);
-      }
-    }
+  if (activeSlide.id !== lastSlideId) {
+    lastSlideId = activeSlide.id;
+    currentSlide = activeSlide;
+    answered = false;
+    showQuestion(activeSlide);
+  }
+  }
 
     // ── MOSTRAR PREGUNTA ─────────────────────────────────────
     function showQuestion(slide) {

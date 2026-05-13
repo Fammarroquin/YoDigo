@@ -188,3 +188,10 @@
 .btn-danger:hover { background: #a93226; }
 
 .loading-msg { color: #aaa; text-align: center; padding: 20px 0; }
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: #1a1a2e;
+  z-index: 999;
+  padding: 20px;
+}

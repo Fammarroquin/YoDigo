@@ -36,10 +36,11 @@ const Slides = {
 
 // ── SESIONES ─────────────────────────────────────────────────
 const Sessions = {
-  create:  (presentation_id) => apiCall('createSession', { presentation_id }),
-  getByPin:(pin)             => apiCall('getSession', { pin }),
-  getById: (id)              => apiCall('getSessionById', { id }),
-  update:  (data)            => apiCall('updateSession', data)
+  create:   (presentation_id) => apiCall('createSession', { presentation_id }),
+  getByPin: (pin)             => apiCall('getSession', { pin }),
+  getById:  (id)              => apiCall('getSessionById', { id }),
+  update:   (data)            => apiCall('updateSession', data),
+  setSlide: (id, slide_id)    => apiCall('setCurrentSlide', { id, slide_id })
 };
 
 // ── RESPUESTAS ───────────────────────────────────────────────

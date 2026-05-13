@@ -60,3 +60,19 @@ function deletePresentation(id) {
   }
   return { success: false, message: 'No encontrada' };
 }
+function uploadImage(data) {
+  try {
+    const folder = DriveApp.getRootFolder(); // o una carpeta específica
+    const blob = Utilities.newBlob(
+      Utilities.base64Decode(data.data),
+      data.type,
+      data.name
+    );
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const url = `https://drive.google.com/uc?export=view&id=${file.getId()}`;
+    return { success: true, url };
+  } catch(e) {
+    return { success: false, message: e.message };
+  }
+}
